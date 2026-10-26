@@ -153,7 +153,7 @@ export default function App() {
   // 刚加进去几个。新的一组排在列表后面，可能被面板挡着或者要滚动才看得到，
   // 面板底部说一声。
   const [justAdded, setJustAdded] = useState(0);
-  // 推送地址：Bark 和飞书是同一个列表，一行一个。null 表示还没动过，跟着后端走；
+  // 推送地址：Bark、飞书和 Telegram 是同一个列表，一行一个。null 表示还没动过，跟着后端走；
   // 动过之后以这份为准，保持用户填写的顺序，渠道标签按后端的归类显示。
   const [pushDraft, setPushDraft] = useState<string[] | null>(null);
   // 代理地址和推送地址一样一行一个，草稿的规矩也相同，见 pushDraft。
@@ -685,7 +685,7 @@ export default function App() {
                     推送地址
                   </Label>
                   <span className="text-muted-foreground min-w-0 truncate text-xs">
-                    Bark 或飞书群机器人，一行一个
+                    Bark、飞书或 Telegram，一行一个
                   </span>
                   {lastPushRow.trim() !== "" && (
                     <Button
@@ -703,7 +703,7 @@ export default function App() {
                   return (
                     <div key={index} className="flex items-center gap-2">
                       {/* 渠道标签占固定宽度：还没保存的行留空，输入框照样对齐。 */}
-                      <span className="flex w-12 shrink-0 justify-center">
+                      <span className="flex w-18 shrink-0 justify-center">
                         {kind !== undefined && (
                           <Badge variant="outline" className="text-muted-foreground">
                             {PUSH_KIND_LABEL[kind]}
@@ -714,7 +714,7 @@ export default function App() {
                         id={`push-${index}`}
                         aria-label={`推送地址 ${index + 1}`}
                         className="select-text"
-                        placeholder="Bark 地址，或飞书群机器人的 webhook"
+                        placeholder="Bark、飞书 webhook 或 Telegram 地址"
                         value={row}
                         // 只有点「添加」新开的那一行自动聚焦；打开面板时的空行不抢焦点。
                         autoFocus={pushDraft !== null && row === "" && index > 0}
@@ -737,8 +737,14 @@ export default function App() {
                 })}
                 {savedPush.some((p) => p.kind === "feishu") && (
                   // 飞书机器人最常见的配置错误是安全设置，只在真填了飞书地址时提醒。
-                  <p className="text-muted-foreground pl-14 text-xs">
+                  <p className="text-muted-foreground pl-20 text-xs">
                     飞书机器人的安全设置请选「自定义关键词」，填「有货」。
+                  </p>
+                )}
+                {savedPush.some((p) => p.kind === "telegram") && (
+                  // 机器人不能主动找人说话，没先发过消息时 Bot API 只回 chat not found。
+                  <p className="text-muted-foreground pl-20 text-xs">
+                    Telegram 请先给机器人发一条消息（群组里先把它拉进群），否则收不到。
                   </p>
                 )}
               </div>
