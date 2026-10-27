@@ -139,6 +139,18 @@ impl NotifyError {
         }
     }
 
+    /// 把地址校验报出的配置错误记到具体的渠道上。校验函数只知道渠道类型，
+    /// 配了多个地址时得报成「Telegram #2」，用户才知道该改哪一行。
+    fn in_channel(self, name: &str) -> Self {
+        match self {
+            Self::Config { detail, .. } => Self::Config {
+                channel: name.to_string(),
+                detail,
+            },
+            other => other,
+        }
+    }
+
     /// 展开成所有失败渠道的名字，嵌套的 [`Multi`] 也会被摊平。
     ///
     /// 界面据此告诉用户「哪一路没通」。只给一句拼起来的长错误串是不够的：
@@ -258,7 +270,7 @@ impl Notifier for Bark {
             return Ok(());
         }
 
-        let url = build_bark_url(&self.base_url, n)?;
+        let url = build_bark_url(&self.base_url, n).map_err(|e| e.in_channel(&self.name))?;
 
         let mut resp = self
             .http
@@ -594,7 +606,7 @@ impl Notifier for Feishu {
             return Ok(());
         }
 
-        let url = validate_feishu_webhook(&self.webhook)?;
+        let url = validate_feishu_webhook(&self.webhook).map_err(|e| e.in_channel(&self.name))?;
 
         let mut resp = self
             .http
@@ -759,7 +771,8 @@ impl Notifier for Telegram {
             return Ok(());
         }
 
-        let (url, mut params) = parse_telegram_url(&self.url)?;
+        let (url, mut params) =
+            parse_telegram_url(&self.url).map_err(|e| e.in_channel(&self.name))?;
         params.push(("text".to_string(), plain_text(n)));
 
         let mut resp = self

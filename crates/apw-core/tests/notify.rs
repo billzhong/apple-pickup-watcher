@@ -521,6 +521,41 @@ async fn telegram多个地址渠道名带序号且只点名失败的那个() {
     assert_eq!(bad.count(), 1);
 }
 
+#[tokio::test]
+async fn 多个地址时配置错误也点名是第几个() {
+    // 地址本身写错的那一路在发请求之前就失败，用不着服务器。
+    let ok_tg = "https://api.telegram.org/bot1:t1/sendMessage?chat_id=1";
+    let telegrams = Telegram::from_list(
+        &format!("{ok_tg};https://api.telegram.org/bot1:t1/sendMessage"),
+        client(),
+    );
+    let err = telegrams[1]
+        .notify(&到货通知())
+        .await
+        .expect_err("第二个地址缺 chat_id");
+    assert!(matches!(err, NotifyError::Config { .. }), "{err}");
+    assert_eq!(err.channel(), Some("Telegram #2"));
+
+    let barks = Bark::from_list("https://api.day.app/k1;ftp://api.day.app/k2", client());
+    let err = barks[1]
+        .notify(&到货通知())
+        .await
+        .expect_err("第二个地址不是 http(s)");
+    assert!(matches!(err, NotifyError::Config { .. }), "{err}");
+    assert_eq!(err.channel(), Some("Bark #2"));
+
+    let feishus = Feishu::from_list(
+        "https://open.feishu.cn/open-apis/bot/v2/hook/f1;ftp://open.feishu.cn/open-apis/bot/v2/hook/f2",
+        client(),
+    );
+    let err = feishus[1]
+        .notify(&到货通知())
+        .await
+        .expect_err("第二个地址不是 http(s)");
+    assert!(matches!(err, NotifyError::Config { .. }), "{err}");
+    assert_eq!(err.channel(), Some("飞书 #2"));
+}
+
 // ---------------------------------------------------------------------------
 // Multi
 // ---------------------------------------------------------------------------
